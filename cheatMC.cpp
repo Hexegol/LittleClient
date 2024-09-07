@@ -4,7 +4,7 @@
 
 int main() {
     Cheat* cheat = new Cheat();
-    char hotkey = 'F'; // Touche de raccourci par défaut
+    char hotkey = 'F';
 
     while (true) {
         std::cout << "LittleClient, made by Hexegol" << std::endl;
