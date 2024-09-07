@@ -9,3 +9,4 @@ open the .sln file
 compile in release/x64
 
 if you are lazy, just download the exe file, reverse engineer it if you think its a viruse
+(x64/Release/cheatMC.exe)
