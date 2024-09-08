@@ -7,6 +7,7 @@
 #include <list>
 #include <fstream>
 
+
 DWORD Cheat::GetPID(const char* ProcessName) {
     PROCESSENTRY32 processInfo;
     processInfo.dwSize = sizeof(PROCESSENTRY32);
@@ -301,6 +302,237 @@ void Cheat::EnableFly(bool resetvalues = false)
     //WriteProcessMemory(phandle, (LPCVOID*)fly, &mno, sizeof(mno), nullptr);
     //Sleep(10);
     //}
+}
+
+namespace Aimbot
+{
+    struct Vector3
+    {
+        float x, y, z;
+    };
+
+    struct Player {
+        Vector3 position;
+        Vector3 viewDirection;
+    };
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+    void CalculateAngles(const Vector3& from, const Vector3& to, float& yaw, float& pitch) {
+        Vector3 delta = { to.x - from.x, to.y - from.y, to.z - from.z };
+
+        yaw = atan2(delta.z, delta.x) * (180.0f / M_PI);
+        pitch = atan2(delta.y, sqrt(delta.x * delta.x + delta.z * delta.z)) * (180.0f / M_PI);
+    }
+}
+
+void Cheat::EnableAimbot(bool resetvalues)
+{
+    unsigned long long pid = GetPID("Minecraft.Windows.exe");
+    MODULEENTRY32 module = GetModule("Minecraft.Windows.exe", pid);
+    HANDLE phandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+
+    if (phandle == NULL) {
+        std::cerr << "Failed to open process" << std::endl;
+        return;
+    }
+
+    char moduleName[] = "Minecraft.Windows.exe";
+    DWORD oldProtect = 0;
+    uintptr_t clientbase = dwGetModuleBaseAddress((moduleName), pid);
+
+    std::cout << "work in progress" << std::endl;
+
+    uintptr_t xBaseAddress = clientbase + 0x05AF08B8;
+    uintptr_t yBaseAddress = clientbase + 0x05AF08B8;
+    uintptr_t zBaseAddress = clientbase + 0x05AF08C8;
+    float xResult;
+    uintptr_t xCurrentAddress = xBaseAddress;
+    if (ReadProcessMemory(phandle, (LPCVOID)xCurrentAddress, &xCurrentAddress, sizeof(xCurrentAddress), nullptr)) {
+        xCurrentAddress += 0x0;
+        if (ReadProcessMemory(phandle, (LPCVOID)xCurrentAddress, &xCurrentAddress, sizeof(xCurrentAddress), nullptr)) {
+            xCurrentAddress += 0x18;
+            if (ReadProcessMemory(phandle, (LPCVOID)xCurrentAddress, &xCurrentAddress, sizeof(xCurrentAddress), nullptr)) {
+                xCurrentAddress += 0x90;
+                if (ReadProcessMemory(phandle, (LPCVOID)xCurrentAddress, &xCurrentAddress, sizeof(xCurrentAddress), nullptr)) {
+                    xCurrentAddress += 0x98;
+                    if (ReadProcessMemory(phandle, (LPCVOID)xCurrentAddress, &xCurrentAddress, sizeof(xCurrentAddress), nullptr)) {
+                        xCurrentAddress += 0xB8;
+                        if (ReadProcessMemory(phandle, (LPCVOID)xCurrentAddress, &xCurrentAddress, sizeof(xCurrentAddress), nullptr)) {
+                            xCurrentAddress += 0x270;
+                            if (ReadProcessMemory(phandle, (LPCVOID)xCurrentAddress, &xCurrentAddress, sizeof(xCurrentAddress), nullptr)) {
+                                xCurrentAddress += 0x0;
+                                if (ReadProcessMemory(phandle, (LPCVOID)xCurrentAddress, &xResult, sizeof(xResult), nullptr)) {
+                                    std::cout << "X Result: " << xResult << std::endl;
+                                }
+                                else {
+                                    std::cerr << "Failed to read final memory address for X position" << std::endl;
+                                }
+                            }
+                            else {
+                                std::cerr << "Failed to read memory at offset +0x270" << std::endl;
+                            }
+                        }
+                        else {
+                            std::cerr << "Failed to read memory at offset +0xB8" << std::endl;
+                        }
+                    }
+                    else {
+                        std::cerr << "Failed to read memory at offset +0x98" << std::endl;
+                    }
+                }
+                else {
+                    std::cerr << "Failed to read memory at offset +0x90" << std::endl;
+                }
+            }
+            else {
+                std::cerr << "Failed to read memory at offset +0x18" << std::endl;
+            }
+        }
+        else {
+            std::cerr << "Failed to read memory at initial address for X position" << std::endl;
+        }
+    }
+    else {
+        std::cerr << "Failed to read initial memory address for X position" << std::endl;
+    }
+    float yResult;
+    uintptr_t yCurrentAddress = yBaseAddress;
+    if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+        yCurrentAddress += 0x0;
+        if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+            yCurrentAddress += 0x0;
+            if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                yCurrentAddress += 0x8;
+                if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                    yCurrentAddress += 0x18;
+                    if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                        yCurrentAddress += 0xB8;
+                        if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                            yCurrentAddress += 0x278;
+                            if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                                yCurrentAddress += 0x4;
+                                if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yResult, sizeof(yResult), nullptr)) {
+                                    std::cout << "Y Result: " << yResult << std::endl;
+                                }
+                                else {
+                                    std::cerr << "Failed to read final memory address for Y position" << std::endl;
+                                }
+                            }
+                            else {
+                                std::cerr << "Failed to read memory at offset +0x278" << std::endl;
+                            }
+                        }
+                        else {
+                            std::cerr << "Failed to read memory at offset +0xB8" << std::endl;
+                        }
+                    }
+                    else {
+                        std::cerr << "Failed to read memory at offset +0x18" << std::endl;
+                    }
+                }
+                else {
+                    std::cerr << "Failed to read memory at offset +0x8" << std::endl;
+                }
+            }
+            else {
+                std::cerr << "Failed to read memory at offset +0x0" << std::endl;
+            }
+        }
+        else {
+            std::cerr << "Failed to read memory at offset +0x0" << std::endl;
+        }
+    }
+    else {
+        std::cerr << "Failed to read initial memory address" << std::endl;
+    }
+
+    float zResult;
+    uintptr_t zCurrentAddress = zBaseAddress;
+    if (ReadProcessMemory(phandle, (LPCVOID)zCurrentAddress, &zCurrentAddress, sizeof(zCurrentAddress), nullptr)) {
+        zCurrentAddress += 0x0;
+        if (ReadProcessMemory(phandle, (LPCVOID)zCurrentAddress, &zCurrentAddress, sizeof(zCurrentAddress), nullptr)) {
+            zCurrentAddress += 0x0;
+            if (ReadProcessMemory(phandle, (LPCVOID)zCurrentAddress, &zCurrentAddress, sizeof(zCurrentAddress), nullptr)) {
+                zCurrentAddress += 0x20;
+                if (ReadProcessMemory(phandle, (LPCVOID)zCurrentAddress, &zCurrentAddress, sizeof(zCurrentAddress), nullptr)) {
+                    zCurrentAddress += 0xA0;
+                    if (ReadProcessMemory(phandle, (LPCVOID)zCurrentAddress, &zCurrentAddress, sizeof(zCurrentAddress), nullptr)) {
+                        zCurrentAddress += 0xB8;
+                        if (ReadProcessMemory(phandle, (LPCVOID)zCurrentAddress, &zCurrentAddress, sizeof(zCurrentAddress), nullptr)) {
+                            zCurrentAddress += 0x270;
+                            if (ReadProcessMemory(phandle, (LPCVOID)zCurrentAddress, &zCurrentAddress, sizeof(zCurrentAddress), nullptr)) {
+                                zCurrentAddress += 0x8;
+                                if (ReadProcessMemory(phandle, (LPCVOID)zCurrentAddress, &zResult, sizeof(zResult), nullptr)) {
+                                    std::cout << "Z Result: " << zResult << std::endl;
+                                }
+                                else {
+                                    std::cerr << "Failed to read final memory address for Z position" << std::endl;
+                                }
+                            }
+                            else {
+                                std::cerr << "Failed to read memory at offset +0x270" << std::endl;
+                            }
+                        }
+                        else {
+                            std::cerr << "Failed to read memory at offset +0xB8" << std::endl;
+                        }
+                    }
+                    else {
+                        std::cerr << "Failed to read memory at offset +0xA0" << std::endl;
+                    }
+                }
+                else {
+                    std::cerr << "Failed to read memory at offset +0x20" << std::endl;
+                }
+            }
+            else {
+                std::cerr << "Failed to read memory at offset +0x0" << std::endl;
+            }
+        }
+        else {
+            std::cerr << "Failed to read memory at initial address for Z position" << std::endl;
+        }
+    }
+    else {
+        std::cerr << "Failed to read initial memory address for Z position" << std::endl;
+    }
+
+
+    //view direction
+    
+    Aimbot::Player player = { {xResult, yResult, zResult}, {0.0f, 0.0f, 1.0f} };
+    
+    Aimbot::Vector3 target = { 10.0f, 5.0f, 10.0f };
+
+    float yaw, pitch;
+    Aimbot::CalculateAngles(player.position, target, yaw, pitch);
+
+    std::cout << "Yaw: " << yaw << ", Pitch: " << pitch << std::endl;
+
+    uintptr_t yawAddress = clientbase + 0x05AD91E8;
+    uintptr_t pitchAddress = clientbase + 0x05AD91E8;
+
+    VirtualProtectEx(phandle, (LPVOID)yawAddress, sizeof(yaw), PAGE_EXECUTE_READWRITE, &oldProtect);
+    VirtualProtectEx(phandle, (LPVOID)pitchAddress, sizeof(pitch), PAGE_EXECUTE_READWRITE, &oldProtect);
+
+    if (WriteProcessMemory(phandle, (LPVOID)yawAddress, &yaw, sizeof(yaw), nullptr)) {
+        std::cout << "Successfully wrote Yaw" << std::endl;
+    }
+    else {
+        std::cerr << "Failed to write memory at address " << std::hex << yawAddress << std::endl;
+    }
+
+    if (WriteProcessMemory(phandle, (LPVOID)pitchAddress, &pitch, sizeof(pitch), nullptr)) {
+        std::cout << "Successfully wrote Pitch" << std::endl;
+    }
+    else {
+        std::cerr << "Failed to write memory at address " << std::hex << pitchAddress << std::endl;
+    }
+
+    CloseHandle(phandle);
 }
 
 void Cheat::emptyRecycleBin() {
