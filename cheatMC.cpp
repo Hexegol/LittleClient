@@ -4,17 +4,18 @@
 
 int main() {
     Cheat* cheat = new Cheat();
-    char hotkey = 'F';
+    char hotkey = 'F'; // Touche de raccourci par défaut
 
     while (true) {
         std::cout << "LittleClient, made by Hexegol" << std::endl;
         std::cout << "1. Change Speed" << std::endl;
         std::cout << "2. Change Hitbox" << std::endl;
         std::cout << "3. Change Reach" << std::endl;
-        std::cout << "4. Self Destruct (return to default values before)" << std::endl;
-        std::cout << "5. Reset All" << std::endl;
-        std::cout << "6. Exit" << std::endl;
-        std::cout << "7. Set hotkey for self-destruct (current = " << hotkey << ")" << std::endl;
+        std::cout << "4. Enable Aimbot" << std::endl;
+        std::cout << "5. Self Destruct (return to default values before)" << std::endl;
+        std::cout << "6. Reset All" << std::endl;
+        std::cout << "7. Exit" << std::endl;
+        std::cout << "8. Set hotkey for self-destruct (current = " << hotkey << ")" << std::endl;
         std::cout << "Enter your choice : ";
         int choice;
         std::cin >> choice;
@@ -30,22 +31,24 @@ int main() {
             cheat->ChangeReach(false);
             break;
         case 4:
+            cheat->EnableAimbot(false);
+			break;
+        case 5:
             cheat->ChangeSpeed(true);
             cheat->ChangeHitbox(true);
             cheat->ChangeReach(true);
             cheat->selfDestruct();
             cheat->emptyRecycleBin();
-
             break;
-        case 5:
+        case 6:
             cheat->ChangeSpeed(true);
             cheat->ChangeHitbox(true);
             cheat->ChangeReach(true);
             break;
-        case 6:
+        case 7:
             delete cheat;
             return 0;
-        case 7:
+        case 8:
             std::cout << "Enter new hotkey: ";
             char input;
             std::cin >> input;
