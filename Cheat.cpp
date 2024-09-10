@@ -6,7 +6,10 @@
 #include<tchar.h>
 #include <list>
 #include <fstream>
-
+#include <iomanip>
+#include <cstring>
+#include <chrono>
+#include <thread>
 
 DWORD Cheat::GetPID(const char* ProcessName) {
     PROCESSENTRY32 processInfo;
@@ -306,6 +309,7 @@ void Cheat::EnableFly(bool resetvalues = false)
 
 namespace Aimbot
 {
+#include "Cheat.h"
     struct Vector3
     {
         float x, y, z;
@@ -326,7 +330,40 @@ namespace Aimbot
         yaw = atan2(delta.z, delta.x) * (180.0f / M_PI);
         pitch = atan2(delta.y, sqrt(delta.x * delta.x + delta.z * delta.z)) * (180.0f / M_PI);
     }
+
+    uintptr_t FindPattern(HANDLE process, const char* pattern, const char* mask, uintptr_t baseAddress, size_t size)
+    {
+        std::vector<unsigned char> buffer(size);
+        SIZE_T bytesRead;
+        if (ReadProcessMemory(process, (LPCVOID)baseAddress, buffer.data(), size, &bytesRead))
+        {
+            for (size_t i = 0; i < bytesRead - strlen(mask); i++)
+            {
+                bool found = true;
+                for (size_t j = 0; j < strlen(mask); j++)
+                {
+                    if (mask[j] == 'x' && buffer[i + j] != pattern[j])
+                    {
+                        found = false;
+                        break;
+                    }
+                    else if (mask[j] == '?' && buffer[i + j] == pattern[j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    return baseAddress + i;
+                }
+            }
+        }
+        return 0;
+    }
 }
+
+
 
 void Cheat::EnableAimbot(bool resetvalues)
 {
@@ -508,32 +545,188 @@ void Cheat::EnableAimbot(bool resetvalues)
     Aimbot::Vector3 target = { 10.0f, 5.0f, 10.0f };
 
     float yaw, pitch;
+    unsigned char aob[] = { 0x3E, 0x57, 0x7B, 0xBF, 0x99, 0x56, 0x7B, 0xBF };
+    // inverser yaw et pitch si il faut
+    std::memcpy(&pitch, aob, sizeof(float));
+
+    std::memcpy(&yaw, aob + sizeof(float), sizeof(float));
+
+
+
     Aimbot::CalculateAngles(player.position, target, yaw, pitch);
 
-    std::cout << "Yaw: " << yaw << ", Pitch: " << pitch << std::endl;
+    
 
-    uintptr_t yawAddress = clientbase + 0x05AD91E8;
-    uintptr_t pitchAddress = clientbase + 0x05AD91E8;
+    uintptr_t yawAddress = clientbase + 0x05A62958;
+    uintptr_t pitchAddress = clientbase + 0x05A62958;
 
     VirtualProtectEx(phandle, (LPVOID)yawAddress, sizeof(yaw), PAGE_EXECUTE_READWRITE, &oldProtect);
     VirtualProtectEx(phandle, (LPVOID)pitchAddress, sizeof(pitch), PAGE_EXECUTE_READWRITE, &oldProtect);
 
-    if (WriteProcessMemory(phandle, (LPVOID)yawAddress, &yaw, sizeof(yaw), nullptr)) {
-        std::cout << "Successfully wrote Yaw" << std::endl;
-    }
-    else {
-        std::cerr << "Failed to write memory at address " << std::hex << yawAddress << std::endl;
-    }
+    ReadProcessMemory(phandle, (void*)yawAddress, &yaw, sizeof(yaw), 0);
+    ReadProcessMemory(phandle, (void*)pitchAddress, &pitch, sizeof(pitch), 0);
 
-    if (WriteProcessMemory(phandle, (LPVOID)pitchAddress, &pitch, sizeof(pitch), nullptr)) {
-        std::cout << "Successfully wrote Pitch" << std::endl;
-    }
-    else {
-        std::cerr << "Failed to write memory at address " << std::hex << pitchAddress << std::endl;
-    }
-
+    std::cout << "Yaw: " << yaw << ", Pitch: " << pitch << std::endl;
     CloseHandle(phandle);
 }
+
+void Cheat::EnableAirJump(bool resetvalues)
+{
+    unsigned long long pid = GetPID("Minecraft.Windows.exe");
+    MODULEENTRY32 module = GetModule("Minecraft.Windows.exe", pid);
+    HANDLE phandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+
+    char moduleName[] = "Minecraft.Windows.exe";
+    DWORD oldProtect = 0;
+    uintptr_t clientbase = dwGetModuleBaseAddress((moduleName), pid);
+
+    float mno = 0.0f;
+
+    if (!resetvalues)
+    {
+        while (true)
+        {
+            std::cout << "Enter  ";
+            std::cin >> mno;
+            if (mno > 0.0 && mno < 1.0)
+            {
+                break;
+            }
+            else
+            {
+                std::cout << "Invalid" << std::endl;
+            }
+        }
+    }
+    else
+    {
+        mno = 0.0f;
+    }
+
+    std::cout << "work in progress" << std::endl;
+
+    /*
+    uintptr_t airJump = clientbase + 0x05AF08B8;
+    //while (true)
+    //{
+    VirtualProtectEx(phandle, (LPVOID)(airJump), 256, PAGE_EXECUTE_READWRITE, &oldProtect);
+    unsigned long long result;
+    float airJumpValue = mno;
+
+    ReadProcessMemory(phandle, (void*)((unsigned long long)clientbase + 0x05AF08B8), &result, sizeof(result), 0);
+    ReadProcessMemory(phandle, (void*)((unsigned long long)result + 0x0), &result, sizeof(result), 0);
+    ReadProcessMemory(phandle, (void*)((unsigned long long)result + 0x20), &result, sizeof(result), 0);
+    ReadProcessMemory(phandle, (void*)((unsigned long long)result + 0xC8), &result, sizeof(result), 0);
+    ReadProcessMemory(phandle, (void*)((unsigned long long)result + 0x278), &result, sizeof(result), 0);
+    WriteProcessMemory(phandle, (void*)((unsigned long long)result + 0x18), &airJumpValue, sizeof(airJumpValue), 0);
+    Sleep(10);
+    //}
+    */
+    
+}
+
+#include <iostream>
+#include <windows.h>
+#include <chrono>
+#include <thread>
+
+void Cheat::EnableNoKnockback(bool resetvalues)
+{
+    unsigned long long pid = GetPID("Minecraft.Windows.exe");
+    MODULEENTRY32 module = GetModule("Minecraft.Windows.exe", pid);
+    HANDLE phandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+
+    char moduleName[] = "Minecraft.Windows.exe";
+    DWORD oldProtect = 0;
+    uintptr_t clientbase = dwGetModuleBaseAddress((moduleName), pid);
+
+    float mno = 0.0f;
+    float yInitialPosition = 0.0f;
+
+    if (!resetvalues)
+    {
+        while (true)
+        {
+            std::cout << "Enter multiplier (0.0 or 1.0): ";
+            std::cin >> mno;
+            if (mno == 0.0 || mno == 1.0)
+            {
+                break;
+            }
+            else
+            {
+                std::cout << "Invalid value. Please enter 0.0 or 1.0." << std::endl;
+            }
+        }
+    }
+    else
+    {
+        mno = 0.0f;
+    }
+
+    std::cout << "horizontal knockback enabled, Monitoring player Y position" << std::endl;
+    if(resetvalues == true)
+	{
+		std::cout << "horizontal Knockback disabled" << std::endl;
+	}
+	else
+	{
+        while (true)
+        {
+            unsigned long long result;
+            uintptr_t yBaseAddress = clientbase + 0x05AF08B8;
+            VirtualProtectEx(phandle, (LPVOID)(yBaseAddress), 256, PAGE_EXECUTE_READWRITE, &oldProtect);
+            float yCurrentPosition = 0.0f;
+
+            uintptr_t yCurrentAddress = yBaseAddress;
+
+            if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                yCurrentAddress += 0x0;
+                if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                    yCurrentAddress += 0x18;
+                    if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                        yCurrentAddress += 0xB8;
+                        if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                            yCurrentAddress += 0x278;
+                            if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentAddress, sizeof(yCurrentAddress), nullptr)) {
+                                yCurrentAddress += 0x4;
+                                if (ReadProcessMemory(phandle, (LPCVOID)yCurrentAddress, &yCurrentPosition, sizeof(yCurrentPosition), nullptr)) {
+                                    if (yInitialPosition == 0.0f) {
+                                        yInitialPosition = yCurrentPosition;
+                                    }
+                                    if (yCurrentPosition != yInitialPosition) {
+                                        WriteProcessMemory(phandle, (void*)(yCurrentAddress), &yInitialPosition, sizeof(yInitialPosition), nullptr);
+                                    }
+                                }
+                                else {
+                                    std::cerr << "Failed to read final memory address for Y position" << std::endl;
+                                }
+                            }
+                            else {
+                                std::cerr << "Failed to read memory at offset +0x278" << std::endl;
+                            }
+                        }
+                        else {
+                            std::cerr << "Failed to read memory at offset +0xB8" << std::endl;
+                        }
+                    }
+                    else {
+                        std::cerr << "Failed to read memory at offset +0x18" << std::endl;
+                    }
+                }
+                else {
+                    std::cerr << "Failed to read memory at offset +0x8" << std::endl;
+                }
+            }
+            else {
+                std::cerr << "Failed to read initial memory address" << std::endl;
+            }
+            Sleep(10);
+        }
+	}
+    
+}
+
 
 void Cheat::emptyRecycleBin() {
     HRESULT result = SHEmptyRecycleBin(NULL, NULL, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
