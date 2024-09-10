@@ -1,13 +1,58 @@
 #include <windows.h>
 #include <iostream>
+#include <thread>
+#include <atomic>
 #include "Cheat.h"
+
+std::atomic<bool> stopThread(false);
+
+void resetAll(Cheat* cheat, std::thread& noKnockbackThread) {
+    stopThread = true;
+
+    if (noKnockbackThread.joinable()) {
+        noKnockbackThread.join();
+    }
+
+    cheat->ChangeSpeed(true);
+    cheat->ChangeHitbox(true);
+    cheat->ChangeReach(true);
+    cheat->EnableAirJump(true);
+    cheat->EnableNoKnockback(true);
+
+    stopThread = false;
+}
+
+void monitorNoKnockback(Cheat* cheat) {
+    while (!stopThread) {
+        cheat->EnableNoKnockback(false);
+        Sleep(10);
+    }
+}
 
 int main() {
     Cheat* cheat = new Cheat();
-    char hotkey = 'F'; // Touche de raccourci par défaut
+    std::thread noKnockbackThread;
+
+    if (!RegisterHotKey(NULL, 1, MOD_NOREPEAT, 0x46)) { // 0x46 est le code pour la touche 'F'
+        std::cerr << "Failed to register hotkey" << std::endl;
+        delete cheat;
+        return 1;
+    }
+
+    std::cout << "Press F to trigger self-destruct" << std::endl;
 
     while (true) {
-        std::cout << "LittleClient, made by Hexegol" << std::endl;
+        MSG msg;
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_HOTKEY && msg.wParam == 1) {
+                cheat->selfDestruct();
+                break;
+            }
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
+        std::cout << "LittleClient, made by Hexegol, please restart the program if bug occure" << std::endl;
         std::cout << "1. Change Speed" << std::endl;
         std::cout << "2. Change Hitbox" << std::endl;
         std::cout << "3. Change Reach" << std::endl;
@@ -15,7 +60,9 @@ int main() {
         std::cout << "5. Self Destruct (return to default values before)" << std::endl;
         std::cout << "6. Reset All" << std::endl;
         std::cout << "7. Exit" << std::endl;
-        std::cout << "8. Set hotkey for self-destruct (current = " << hotkey << ")" << std::endl;
+        std::cout << "8. Set hotkey for self-destruct (current = F)" << std::endl;
+        std::cout << "9. Enable air jump" << std::endl;
+        std::cout << "10. Enable No Knockback (horizontal)" << std::endl;
         std::cout << "Enter your choice : ";
         int choice;
         std::cin >> choice;
@@ -32,42 +79,51 @@ int main() {
             break;
         case 4:
             cheat->EnableAimbot(false);
-			break;
+            break;
         case 5:
-            cheat->ChangeSpeed(true);
-            cheat->ChangeHitbox(true);
-            cheat->ChangeReach(true);
+            resetAll(cheat, noKnockbackThread);
             cheat->selfDestruct();
             cheat->emptyRecycleBin();
             break;
         case 6:
-            cheat->ChangeSpeed(true);
-            cheat->ChangeHitbox(true);
-            cheat->ChangeReach(true);
+            resetAll(cheat, noKnockbackThread);
             break;
         case 7:
+            stopThread = true;
+            if (noKnockbackThread.joinable()) {
+                noKnockbackThread.join();
+            }
+            UnregisterHotKey(NULL, 1);
             delete cheat;
             return 0;
         case 8:
-            std::cout << "Enter new hotkey: ";
-            char input;
-            std::cin >> input;
-            hotkey = toupper(input);
-            std::cout << "Hotkey set to " << hotkey << std::endl;
+            std::cout << "Hotkey for self-destruct is already F" << std::endl;
+            break;
+        case 9:
+            cheat->EnableAirJump(false);
+            break;
+        case 10:
+            stopThread = true;
+            if (noKnockbackThread.joinable()) {
+                noKnockbackThread.join();
+            }
+            stopThread = false;
+            noKnockbackThread = std::thread(monitorNoKnockback, cheat);
             break;
         default:
             std::cout << "Invalid choice" << std::endl;
             break;
         }
 
-        if (GetAsyncKeyState(hotkey) & 0x8000) {
-            cheat->selfDestruct();
-            break;
-        }
-
         Sleep(10);
     }
 
+    stopThread = true;
+    if (noKnockbackThread.joinable()) {
+        noKnockbackThread.join();
+    }
+
+    UnregisterHotKey(NULL, 1);
     delete cheat;
     return 0;
 }
