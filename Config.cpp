@@ -17,7 +17,7 @@ bool Config::isJsonFile()
             else return false;
         }
     }
-    return false; // Ajouté pour éviter la non-retour
+    return false; 
 }
 
 Config::Config(const char* filename)
